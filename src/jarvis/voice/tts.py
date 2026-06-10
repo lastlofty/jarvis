@@ -34,11 +34,15 @@ class TTS:
             import pyttsx3
 
             engine = pyttsx3.init()
-            # пробуем русский голос, если есть
+            # пробуем русский голос, если есть (languages может быть str или bytes)
             for v in engine.getProperty("voices"):
                 name = (getattr(v, "name", "") or "").lower()
-                langs = b" ".join(getattr(v, "languages", []) or []).lower()
-                if "rus" in name or "irina" in name or b"ru" in langs:
+                langs = getattr(v, "languages", []) or []
+                langs_str = " ".join(
+                    (x.decode("utf-8", "ignore") if isinstance(x, bytes) else str(x))
+                    for x in langs
+                ).lower()
+                if "rus" in name or "irina" in name or "ru" in langs_str:
                     engine.setProperty("voice", v.id)
                     break
             engine.setProperty("rate", 180)

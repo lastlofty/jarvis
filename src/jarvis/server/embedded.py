@@ -109,7 +109,15 @@ def start() -> str:
 
         from jarvis.server.api import app
 
-        config = uvicorn.Config(app, host="0.0.0.0", port=settings.port, log_level="warning")
+        config = uvicorn.Config(
+            app,
+            host="0.0.0.0",
+            port=settings.port,
+            log_level="warning",
+            # КРИТИЧНО для собранного windowed exe: у uvicorn нет sys.stdout,
+            # и его стандартный логгер падает при старте -> сервер не поднимается.
+            log_config=None,
+        )
         server = uvicorn.Server(config)
         # off-main-thread: отключаем обработчики сигналов (иначе ошибка)
         server.install_signal_handlers = lambda: None  # type: ignore[method-assign]
