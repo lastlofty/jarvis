@@ -14,6 +14,7 @@ source .venv/bin/activate
 
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+pip install -r requirements_gui.txt
 pip install pyinstaller
 pip install -e .
 
