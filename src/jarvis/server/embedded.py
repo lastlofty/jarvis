@@ -7,12 +7,54 @@
 from __future__ import annotations
 
 import socket
+import subprocess
+import sys
 import threading
 
 from jarvis.core.config import settings
 from jarvis.core.logging_setup import logger
 
 _thread: threading.Thread | None = None
+
+_FW_RULE = "Jarvis Mobile"
+
+
+def firewall_rule_exists() -> bool:
+    """Есть ли уже правило брандмауэра для порта (Windows)."""
+    if sys.platform != "win32":
+        return True
+    try:
+        r = subprocess.run(
+            ["netsh", "advfirewall", "firewall", "show", "rule", f"name={_FW_RULE}"],
+            capture_output=True, text=True, timeout=10,
+        )
+        return r.returncode == 0 and "localport" in r.stdout.lower()
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def add_firewall_rule_elevated() -> bool:
+    """Добавляет правило брандмауэра (порт settings.port) с запросом прав админа.
+
+    Вызовет окно UAC. Возвращает True, если запрос отправлен.
+    """
+    if sys.platform != "win32":
+        return False
+    if firewall_rule_exists():
+        return True
+    try:
+        import ctypes
+
+        args = (
+            f'advfirewall firewall add rule name="{_FW_RULE}" '
+            f"dir=in action=allow protocol=TCP localport={settings.port}"
+        )
+        # runas -> запрос прав администратора (UAC)
+        rc = ctypes.windll.shell32.ShellExecuteW(None, "runas", "netsh", args, None, 0)
+        return int(rc) > 32
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"Не удалось добавить правило брандмауэра: {e}")
+        return False
 
 
 def local_ip() -> str:

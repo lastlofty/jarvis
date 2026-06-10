@@ -139,7 +139,6 @@ class MainWindow(QMainWindow):
 
     def _on_wake(self) -> None:
         self._restore_from_tray()
-        # запускаем голосовой ввод на странице чата
         self.pages.setCurrentIndex(0)
         self.sidebar.select(0)
         try:

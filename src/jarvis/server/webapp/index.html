@@ -126,8 +126,14 @@ let ws = null, token = "", base = "";
 
 // автозаполнение: если приложение раздаётся самим сервером — host = текущий
 if (location.host) $("host").value = location.host;
-$("token").value = localStorage.getItem("jarvis_token") || "";
 if (localStorage.getItem("jarvis_host")) $("host").value = localStorage.getItem("jarvis_host");
+$("token").value = localStorage.getItem("jarvis_token") || "";
+
+// токен из QR-ссылки (?token=...) — вход в один тап
+const _params = new URLSearchParams(location.search);
+const _qrToken = _params.get("token");
+let _autoConnect = false;
+if (_qrToken) { $("token").value = _qrToken; _autoConnect = true; }
 
 function setStatus(on){ const d=$("status"); d.className = "dot " + (on?"on":"off"); }
 
@@ -205,6 +211,9 @@ $("logoutBtn").onclick = ()=>{ if(ws)ws.close(); localStorage.removeItem("jarvis
 $("screenBtn").onclick = ()=>{ $("screen").classList.remove("hidden"); loadShot(); };
 $("refreshShot").onclick = loadShot;
 $("closeShot").onclick = ()=>$("screen").classList.add("hidden");
+
+// вход в один тап, если токен пришёл из QR-ссылки
+if (_autoConnect) { setTimeout(connect, 300); }
 
 // service worker (PWA)
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }

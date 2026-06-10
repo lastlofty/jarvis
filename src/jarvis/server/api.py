@@ -12,6 +12,7 @@ from fastapi import (
     FastAPI,
     Header,
     HTTPException,
+    Request,
     WebSocket,
     WebSocketDisconnect,
 )
@@ -25,6 +26,7 @@ from jarvis.core.logging_setup import logger, setup_logging
 from jarvis.executor import comm_tools, input_tools
 from jarvis.llm.orchestrator import Orchestrator
 from jarvis.observer.observer import observer
+from jarvis.server import security
 
 
 # ---------- Lifespan ----------
@@ -34,6 +36,7 @@ from jarvis.observer.observer import observer
 async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("Jarvis starting up...")
+    security.warn_if_weak()
     load_extensions()
     await start_mcp()
     if settings.enable_observer:
@@ -73,13 +76,28 @@ async def _root() -> RedirectResponse:
 # ---------- Auth ----------
 
 
-def verify_token(authorization: str | None = Header(default=None)) -> None:
-    """Простая проверка Bearer-токена."""
-    expected = settings.auth_token
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
+def verify_token(
+    request: Request, authorization: str | None = Header(default=None)
+) -> None:
+    """Проверка Bearer-токена: constant-time + анти-брутфорс по IP."""
+    ip = _client_ip(request)
+
+    remaining = security.lock_remaining(ip)
+    if remaining > 0:
+        raise HTTPException(429, f"Слишком много попыток. Подождите {int(remaining)} c.")
+
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(401, "Требуется заголовок Authorization: Bearer <token>")
-    if authorization.removeprefix("Bearer ").strip() != expected:
+
+    token = authorization.removeprefix("Bearer ").strip()
+    if not security.check_token(token):
+        security.record_fail(ip)
         raise HTTPException(403, "Неверный токен")
+    security.record_success(ip)
 
 
 # ---------- Connection manager ----------
@@ -157,8 +175,15 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     clients: ConnectionManager = app.state.clients
     orch = _get_orchestrator()
 
+    ip = ws.client.host if ws.client else "unknown"
     await ws.accept()
     try:
+        # 0) Анти-брутфорс
+        if security.lock_remaining(ip) > 0:
+            await ws.send_text(json.dumps({"type": "auth", "ok": False, "error": "rate_limited"}))
+            await ws.close(code=4429)
+            return
+
         # 1) Auth
         try:
             first = await asyncio.wait_for(ws.receive_text(), timeout=10.0)
@@ -170,10 +195,12 @@ async def websocket_endpoint(ws: WebSocket) -> None:
         except json.JSONDecodeError:
             await ws.close(code=4400)
             return
-        if msg.get("type") != "auth" or msg.get("token") != settings.auth_token:
+        if msg.get("type") != "auth" or not security.check_token(msg.get("token")):
+            security.record_fail(ip)
             await ws.send_text(json.dumps({"type": "auth", "ok": False}))
             await ws.close(code=4403)
             return
+        security.record_success(ip)
         await ws.send_text(json.dumps({"type": "auth", "ok": True}))
 
         # 2) Регистрируем как broadcast-получателя

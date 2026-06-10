@@ -50,9 +50,18 @@ def open_app(app_name: str) -> ToolResult:
 
 
 def run_script(script_path: str) -> ToolResult:
-    """Запуск .py / .bat / .ps1 / .sh скрипта."""
+    """Запуск .py / .bat / .ps1 / .sh скрипта (только в пределах SAFE_ROOT)."""
+    from jarvis.executor.safety import UnsafePathError, resolve_safe
+
     try:
-        p = Path(script_path).expanduser().resolve()
+        # Запускать можно только скрипты внутри безопасной зоны —
+        # защита от удалённого запуска произвольных системных скриптов.
+        try:
+            p = resolve_safe(script_path)
+        except UnsafePathError:
+            return ToolResult.fail(
+                "Запуск скрипта вне безопасной зоны (SAFE_ROOT) запрещён."
+            )
         if not p.exists():
             return ToolResult.fail(f"Скрипт не найден: {p}")
         if p.suffix == ".py":

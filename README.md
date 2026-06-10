@@ -349,9 +349,16 @@ ruff + black + mypy + pytest на Windows-раннере.
 | Угроза | Защита |
 |---|---|
 | LLM просит удалить системный файл | `SAFE_ROOT` ограничивает все операции рабочей зоной |
-| LLM удаляет без спроса | `delete_file` требует `confirmed=true`, который ставится только после `ask_user` |
-| Перехват WebSocket | Bearer-токен + Tailscale (WireGuard под капотом) |
-| Случайный `rm -rf` | Path traversal через `..` блокируется в `safety.resolve_safe()` |
+| LLM удаляет без спроса | `delete_file` требует `confirmed=true` (после `ask_user`) |
+| Запуск произвольного скрипта удалённо | `run_script` разрешён только внутри `SAFE_ROOT` |
+| Случайный `rm -rf` / path traversal | `..` блокируется в `safety.resolve_safe()` |
+| Подбор токена (brute-force) | блокировка IP после 5 неудач на 5 минут (REST + WS) |
+| Timing-атака на токен | сравнение в постоянном времени (`secrets.compare_digest`) |
+| Дефолтный/пустой `AUTH_TOKEN` | сервер блокирует ВСЕ запросы, пока не задан надёжный токен (≥16 симв.) |
+| Перехват в сети | Bearer-токен + Tailscale (WireGuard) для удалёнки |
+
+**Secure-by-default:** при запуске сервера для телефона из GUI слабый `AUTH_TOKEN`
+автоматически заменяется на надёжный, а токен зашивается в QR (вход в один тап).
 
 **Важно:** не публикуйте `.env` в Git. Файл уже в `.gitignore`.
 

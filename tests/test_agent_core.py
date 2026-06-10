@@ -255,6 +255,44 @@ def test_embedded_url_format():
     assert url.startswith("http://") and url.endswith("/app/")
 
 
+def test_security_token_and_bruteforce(monkeypatch):
+    from jarvis.core.config import settings
+    from jarvis.server import security
+
+    # слабый/короткий токен блокирует всех
+    monkeypatch.setattr(settings, "auth_token", "short")
+    assert security.token_is_weak()
+    assert not security.check_token("short")
+
+    # надёжный токен — constant-time сравнение
+    strong = "X" * 24
+    monkeypatch.setattr(settings, "auth_token", strong)
+    assert not security.token_is_weak()
+    assert security.check_token(strong)
+    assert not security.check_token("wrong")
+    assert not security.check_token(None)
+
+    # анти-брутфорс: блокировка после серии неудач
+    ip = "10.0.0.9"
+    assert security.lock_remaining(ip) == 0
+    for _ in range(5):
+        security.record_fail(ip)
+    assert security.lock_remaining(ip) > 0
+    security.record_success(ip)
+    assert security.lock_remaining(ip) == 0
+
+
+def test_run_script_blocked_outside_safe_root(tmp_path, monkeypatch):
+    from jarvis.core.config import settings
+    from jarvis.executor.app_tools import run_script
+
+    monkeypatch.setattr(settings, "safe_root", str(tmp_path))
+    # путь вне SAFE_ROOT -> запрещено
+    res = run_script("C:/Windows/System32/calc.exe")
+    assert res.status == "error"
+    assert "безопасн" in res.message.lower()
+
+
 def test_updater_version_compare():
     from jarvis.core.updater import is_newer
 

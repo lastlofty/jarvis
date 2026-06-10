@@ -1,6 +1,7 @@
 """Страница настроек: выбор модели и конфигурация (пишет в .env)."""
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -291,13 +292,43 @@ class SettingsPage(QWidget):
 
     def _start_mobile(self) -> None:
         """Запускает мобильный сервер и показывает QR-код с адресом."""
-        try:
-            from jarvis.server import embedded
+        import secrets
+        from pathlib import Path
 
+        from jarvis.core.config import settings
+        from jarvis.server import embedded, security
+
+        # 1) Надёжный токен (генерируем, если слабый/дефолтный) — secure-by-default
+        if security.token_is_weak():
+            new_token = secrets.token_urlsafe(24)
+            settings.auth_token = new_token
+            self._token_input.setText(new_token)
+            try:
+                self._update_env_file(Path.cwd() / ".env", {"AUTH_TOKEN": new_token})
+            except Exception:  # noqa: BLE001
+                pass
+        token = settings.auth_token
+
+        # 2) Правило брандмауэра (вход с телефона). Спросим — потребуются права админа.
+        if sys.platform == "win32" and not embedded.firewall_rule_exists():
+            ans = QMessageBox.question(
+                self,
+                "Брандмауэр",
+                "Разрешить телефону подключаться к ПК через брандмауэр Windows?\n"
+                "Появится запрос прав администратора (один раз).",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if ans == QMessageBox.StandardButton.Yes:
+                embedded.add_firewall_rule_elevated()
+
+        # 3) Запуск сервера
+        try:
             url = embedded.start()
         except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "Ошибка", f"Не удалось запустить сервер:\n{e}")
             return
+        # QR с токеном — вход на телефоне в один тап
+        url = f"{url}?token={token}"
 
         dlg = QDialog(self)
         dlg.setWindowTitle("Сервер для телефона запущен")
@@ -327,7 +358,9 @@ class SettingsPage(QWidget):
         v.addWidget(link, alignment=Qt.AlignmentFlag.AlignCenter)
 
         hint = QLabel(
-            "Телефон должен быть в той же Wi-Fi сети. Токен входа — это AUTH_TOKEN из настроек."
+            "Телефон и ПК — в одной Wi-Fi сети. Токен уже зашит в QR — вход в один тап.\n"
+            "Если не подключается: разреши порт в брандмауэре (кнопка выше → «Да») и "
+            "проверь, что Wi-Fi сеть общая (не «гостевая»)."
         )
         hint.setWordWrap(True)
         hint.setStyleSheet(f"color:{Colors.TEXT_SECONDARY};font-size:12px;")

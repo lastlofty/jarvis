@@ -237,15 +237,7 @@ class ChatPage(QWidget):
         input_layout.setContentsMargins(16, 12, 16, 16)
         input_layout.setSpacing(10)
 
-        from jarvis.core.config import settings as _settings
-
-        self._tts_btn = QPushButton("🔊")
-        self._tts_btn.setCheckable(True)
-        self._tts_btn.setChecked(_settings.tts_enabled)
-        self._tts_btn.setFixedSize(40, 40)
-        self._tts_btn.setToolTip("Озвучивать ответы (TTS)")
-        input_layout.addWidget(self._tts_btn, alignment=Qt.AlignmentFlag.AlignBottom)
-
+        # Голосовой ввод (микрофон) — голос ПОЛЬЗОВАТЕЛЯ
         self._mic_btn = QPushButton("🎤")
         self._mic_btn.setFixedSize(40, 40)
         self._mic_btn.setToolTip("Голосовой ввод (5 секунд)")
@@ -407,13 +399,16 @@ class ChatPage(QWidget):
         # сохраняем ответ в историю чата
         if self._conv_id is not None:
             self._store.add_message(self._conv_id, "assistant", text)
-        # озвучка
-        if self._tts_btn.isChecked():
+        # озвучка Джарвиса (управляется в Настройках: TTS_ENABLED)
+        from jarvis.core.config import settings
+
+        if settings.tts_enabled:
             from jarvis.voice import tts
 
             tts.speak(text)
 
     def _on_mic(self) -> None:
+        """Голосовой ввод: запись 5с + распознавание в фоне."""
         self._mic_btn.setEnabled(False)
         self._mic_btn.setText("●")
         self._stt = _STTWorker()
