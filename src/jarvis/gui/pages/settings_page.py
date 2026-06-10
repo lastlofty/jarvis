@@ -329,12 +329,23 @@ class SettingsPage(QWidget):
             return
         # QR с токеном — вход на телефоне в один тап
         url = f"{url}?token={token}"
+        serving = embedded.is_serving()
 
         dlg = QDialog(self)
         dlg.setWindowTitle("Сервер для телефона запущен")
         v = QVBoxLayout(dlg)
         v.setContentsMargins(24, 24, 24, 24)
         v.setSpacing(12)
+
+        # Статус: реально ли сервер отвечает
+        status = QLabel(
+            "✓ Сервер работает" if serving else "✗ Сервер НЕ отвечает (см. data\\jarvis.log)"
+        )
+        status.setStyleSheet(
+            "font-family:'JetBrains Mono','Consolas',monospace;font-size:13px;"
+            + (f"color:{Colors.ACCENT};" if serving else f"color:{Colors.ERROR};")
+        )
+        v.addWidget(status, alignment=Qt.AlignmentFlag.AlignCenter)
 
         title = QLabel("Отсканируйте QR телефоном")
         title.setStyleSheet(

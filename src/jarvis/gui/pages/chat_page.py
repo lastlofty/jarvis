@@ -409,6 +409,19 @@ class ChatPage(QWidget):
 
     def _on_mic(self) -> None:
         """Голосовой ввод: запись 5с + распознавание в фоне."""
+        from jarvis.voice import stt
+
+        if not stt.deps_available():
+            self._add_message(
+                "🎤 Голосовой ввод недоступен. Установите: pip install vosk sounddevice",
+                Role.SYSTEM,
+            )
+            return
+        if not stt.model_present():
+            self._add_message(
+                "🎤 Скачиваю модель распознавания (~45 МБ) — это разово, подождите…",
+                Role.SYSTEM,
+            )
         self._mic_btn.setEnabled(False)
         self._mic_btn.setText("●")
         self._stt = _STTWorker()

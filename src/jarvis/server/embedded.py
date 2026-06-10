@@ -78,6 +78,24 @@ def is_running() -> bool:
     return _thread is not None and _thread.is_alive()
 
 
+def is_serving(timeout: float = 5.0) -> bool:
+    """Проверяет, что сервер реально отвечает на localhost (поднялся ли)."""
+    import time
+
+    import httpx
+
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            r = httpx.get(f"http://127.0.0.1:{settings.port}/health", timeout=1.0)
+            if r.status_code == 200:
+                return True
+        except httpx.HTTPError:
+            pass
+        time.sleep(0.4)
+    return False
+
+
 def start() -> str:
     """Запускает сервер в фоне (если ещё не запущен). Возвращает URL для телефона."""
     global _thread

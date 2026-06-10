@@ -48,6 +48,10 @@ server_log.txt
 _slides_qa/
 Jarvis_презентация.pdf
 
+# Модели распознавания речи (качаются автоматически)
+models/
+*.zip
+
 # OS
 .DS_Store
 Thumbs.db

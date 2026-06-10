@@ -7,6 +7,8 @@
 Результат: dist/Jarvis/Jarvis.exe (windowed, без чёрной консоли)
 """
 
+from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
+
 HIDDEN_IMPORTS = [
     # Pydantic
     "pydantic",
@@ -66,6 +68,12 @@ HIDDEN_IMPORTS = [
     "ddgs",
     "keyboard",
 
+    # Голос: распознавание (vosk) и микрофон (sounddevice)
+    "vosk",
+    "sounddevice",
+    "cffi",
+    "_cffi_backend",
+
     # Встроенный сервер для мобильного приложения
     "jarvis.server.api",
     "jarvis.server.embedded",
@@ -88,12 +96,15 @@ DATAS = [
     (".env.example", "."),
     # Мобильное PWA-приложение (раздаётся встроенным сервером)
     ("src/jarvis/server/webapp", "jarvis/server/webapp"),
-]
+] + collect_data_files("vosk")
+
+# Нативные библиотеки для голоса (libvosk, portaudio)
+EXTRA_BINARIES = collect_dynamic_libs("vosk") + collect_dynamic_libs("sounddevice")
 
 a = Analysis(
     ["src/jarvis/gui/__main__.py"],
     pathex=["src"],
-    binaries=[],
+    binaries=EXTRA_BINARIES,
     datas=DATAS,
     hiddenimports=HIDDEN_IMPORTS,
     hookspath=[],

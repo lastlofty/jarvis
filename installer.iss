@@ -3,7 +3,7 @@
 ; Перед сборкой соберите exe: build_gui.bat (нужна папка dist\Jarvis)
 
 #define AppName "Jarvis"
-#define AppVersion "0.2.2"
+#define AppVersion "0.2.3"
 #define AppPublisher "lastlofty"
 #define AppExe "Jarvis.exe"
 
