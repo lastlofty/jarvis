@@ -1,0 +1,6 @@
+{
+  "name": "websearch",
+  "description": "Поиск в интернете через DuckDuckGo (бесплатно, без ключа).",
+  "enabled": true,
+  "knowledge": ["README.md"]
+}

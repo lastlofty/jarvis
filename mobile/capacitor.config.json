@@ -1,0 +1,12 @@
+{
+  "appId": "ai.jarvis.app",
+  "appName": "Jarvis",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

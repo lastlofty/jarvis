@@ -1,0 +1,6 @@
+{
+  "name": "vision",
+  "description": "Зрение: анализ экрана и изображений через бесплатную мультимодальную GLM-4V.",
+  "enabled": true,
+  "knowledge": ["README.md"]
+}

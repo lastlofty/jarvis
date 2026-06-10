@@ -1,0 +1,11 @@
+{
+  "_comment": "Конфиг внешних MCP-серверов. Включается параметром MCP_ENABLED=true в .env. Требует пакет mcp (pip install mcp) и установленные сервера (обычно через npx).",
+  "servers": [
+    {
+      "name": "filesystem",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:/Users/ohotn/OneDrive/Рабочий стол"],
+      "_disabled_hint": "Пример: файловый MCP-сервер. Удалите этот сервер или меняйте путь под себя."
+    }
+  ]
+}

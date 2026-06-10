@@ -1,0 +1,119 @@
+name: Release
+
+# Собирает дистрибутивы для Windows, Linux и Android при пуше тега vX.Y.Z
+# и публикует их в GitHub Releases (работает с авто-обновлением в приложении).
+#   git tag v0.2.0 && git push origin v0.2.0
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  # ---------- Windows: exe + установщик Inno Setup ----------
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+          pip install -e .
+
+      - name: Build exe
+        run: pyinstaller jarvis_gui.spec --clean --noconfirm
+
+      - name: Copy runtime files
+        run: |
+          xcopy /E /I /Y plugins dist\Jarvis\plugins
+          copy /Y mcp_servers.json dist\Jarvis\
+          copy /Y .env.example dist\Jarvis\
+
+      - name: Build installer (Inno Setup)
+        run: |
+          choco install innosetup -y
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: installer_out/*.exe
+
+  # ---------- Linux: PyInstaller -> tar.gz ----------
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+
+      - name: Install system libs (Qt)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3
+
+      - name: Build
+        run: |
+          chmod +x build_linux.sh
+          ./build_linux.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-tarball
+          path: release_out/*.tar.gz
+
+  # ---------- Android: Capacitor -> APK ----------
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: android-actions/setup-android@v3
+
+      - name: Build APK
+        working-directory: mobile
+        run: |
+          npm install
+          node sync-web.js
+          npx cap add android
+          npx cap sync android
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Rename APK
+        run: |
+          mkdir -p apk_out
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk apk_out/Jarvis.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: apk_out/Jarvis.apk
+
+  # ---------- Публикация релиза ----------
+  release:
+    needs: [windows, linux, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: artifacts }
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/windows-installer/*
+            artifacts/linux-tarball/*
+            artifacts/android-apk/*
+          generate_release_notes: true

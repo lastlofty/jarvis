@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Virtual env
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Tests / coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Project data
+data/
+*.db
+*.db-journal
+*.log
+*.png
+!docs/*.png
+!src/jarvis/server/webapp/*.png
+
+# Secrets
+.env
+*.cer
+*.pfx
+
+# Builds
+installer_out/
+release_out/
+build_log.txt
+server_log.txt
+
+# QA temp
+_slides_qa/
+Jarvis_презентация.pdf
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

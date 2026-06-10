@@ -1,0 +1,5 @@
+{
+  "name": "jarvis_kb",
+  "description": "База знаний о самом агенте Jarvis (RAG-only плагин, без скиллов).",
+  "enabled": true
+}

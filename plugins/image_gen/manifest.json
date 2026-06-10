@@ -1,0 +1,6 @@
+{
+  "name": "image_gen",
+  "description": "Генерация изображений по тексту через бесплатную CogView-3-Flash.",
+  "enabled": true,
+  "knowledge": ["README.md"]
+}

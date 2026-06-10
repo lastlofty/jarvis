@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jarvis — презентация проекта</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070a0d; --bg-soft:#0d1318; --panel:#0f1721; --border:#1c2733;
+  --text:#cfe3d6; --muted:#6f8a7d; --accent:#00ff9c; --accent-dim:#00b86f;
+  --cyan:#34e0ff; --warn:#ffcb6b;
+  --mono:'JetBrains Mono',monospace; --sans:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--sans);
+  overflow:hidden;
+}
+/* сканлайн-оверлей */
+body::after{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.18) 3px);
+}
+::selection{background:var(--accent);color:#04130b}
+
+.deck{position:relative;width:100vw;height:100vh}
+.slide{
+  position:absolute;inset:0;display:none;flex-direction:column;
+  justify-content:center;padding:6vh 8vw;
+  animation:fade .45s ease;
+}
+.slide.active{display:flex}
+@keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* терминальная плашка-заголовок секции */
+.kicker{font-family:var(--mono);font-size:14px;color:var(--accent);margin-bottom:14px;letter-spacing:.5px}
+.kicker span{color:var(--muted)}
+h1{font-size:clamp(34px,6vw,76px);font-weight:800;line-height:1.04;letter-spacing:-1px}
+h1 .glow{color:var(--accent);text-shadow:0 0 26px rgba(0,255,156,.5)}
+h2{font-size:clamp(26px,4vw,46px);font-weight:700;margin-bottom:24px;line-height:1.1}
+h2::after{content:'';display:block;width:64px;height:3px;background:var(--accent);margin-top:14px;border-radius:2px;box-shadow:0 0 16px var(--accent)}
+p.lead{font-size:clamp(16px,2vw,22px);color:var(--muted);max-width:60ch;line-height:1.55}
+p.lead b{color:var(--text)}
+.cyan{color:var(--cyan)}.acc{color:var(--accent)}
+
+.cursor{display:inline-block;width:14px;height:1.05em;background:var(--accent);margin-left:4px;vertical-align:-3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+.tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:30px}
+.tag{font-family:var(--mono);font-size:13px;color:var(--accent-dim);border:1px solid var(--border);padding:7px 13px;border-radius:7px;background:rgba(0,255,156,.04)}
+
+.meta{margin-top:42px;font-family:var(--mono);font-size:14px;color:var(--muted)}
+.meta b{color:var(--accent)}
+
+/* окно-терминал */
+.term{background:rgba(15,23,33,.85);border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 0 60px rgba(0,255,156,.06),0 24px 60px rgba(0,0,0,.5);max-width:880px;width:100%}
+.term-bar{display:flex;align-items:center;gap:8px;padding:11px 15px;background:#0a1016;border-bottom:1px solid var(--border);border-radius:12px 12px 0 0}
+.dot{width:12px;height:12px;border-radius:50%}
+.r{background:#ff5f56}.y{background:#ffbd2e}.g{background:#27c93f}
+.term-title{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:8px}
+.term-body{padding:22px 26px;font-family:var(--mono);font-size:15px;line-height:1.7}
+.term-body .c{color:var(--muted)}
+.term-body .p{color:var(--accent)}
+.term-body .o{color:var(--text)}
+
+/* сетки карточек */
+.grid{display:grid;gap:16px;margin-top:8px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px 22px;transition:.2s}
+.card:hover{border-color:var(--accent-dim);transform:translateY(-3px);box-shadow:0 0 26px rgba(0,255,156,.06)}
+.card .ic{font-size:24px;margin-bottom:10px}
+.card h3{font-family:var(--mono);font-size:15px;color:var(--accent);margin-bottom:7px}
+.card p{font-size:14px;color:var(--muted);line-height:1.5}
+
+/* пошаговый список */
+.steps{display:flex;flex-direction:column;gap:14px;margin-top:6px;max-width:80ch}
+.step{display:flex;gap:16px;align-items:flex-start;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 18px}
+.step .n{font-family:var(--mono);font-weight:800;color:#04130b;background:var(--accent);min-width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 14px rgba(0,255,156,.4)}
+.step .t{font-size:15.5px;line-height:1.5}
+.step .t b{color:var(--accent)}
+
+/* схема архитектуры */
+.arch{font-family:var(--mono);font-size:clamp(9px,1.45vw,14px);line-height:1.45;color:var(--text);
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px 26px;white-space:pre;max-width:960px;overflow:auto}
+.arch .a{color:var(--accent)}.arch .m{color:var(--muted)}.arch .cy{color:var(--cyan)}
+
+ul.bullets{list-style:none;margin-top:6px;max-width:70ch}
+ul.bullets li{position:relative;padding-left:26px;margin-bottom:14px;font-size:16.5px;line-height:1.5;color:var(--text)}
+ul.bullets li::before{content:'▹';position:absolute;left:0;color:var(--accent);font-weight:700}
+ul.bullets li b{color:var(--accent)}
+ul.bullets li span{color:var(--muted)}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center}
+
+/* нижняя панель */
+.hud{position:fixed;bottom:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;align-items:center;
+  padding:12px 24px;font-family:var(--mono);font-size:12px;color:var(--muted);
+  background:linear-gradient(0deg,rgba(7,10,13,.9),transparent)}
+.hud .logo{color:var(--accent);font-weight:800}
+.progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);z-index:11;box-shadow:0 0 12px var(--accent);transition:width .3s}
+.hint{position:fixed;bottom:46px;right:24px;z-index:10;font-family:var(--mono);font-size:11px;color:var(--muted);opacity:.7}
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 -->
+  <section class="slide active">
+    <div class="kicker">$ <span>./</span>start jarvis<span class="cursor"></span></div>
+    <h1>JARVIS<br><span class="glow">персональный AI-агент</span></h1>
+    <p class="lead" style="margin-top:18px">Портативный голосовой ассистент для Windows, который понимает речь,
+      <b>управляет компьютером</b> и бесконечно расширяется плагинами.</p>
+    <div class="tags">
+      <span class="tag">GLM · Gemini · Ollama</span>
+      <span class="tag">RAG</span>
+      <span class="tag">Плагины / Скиллы</span>
+      <span class="tag">MCP</span>
+      <span class="tag">Зрение</span>
+      <span class="tag">Голос</span>
+      <span class="tag">Глубокое мышление</span>
+    </div>
+    <div class="meta">автор: <b>lastlofty</b> &nbsp;·&nbsp; курсовой проект &nbsp;·&nbsp; Python · PySide6</div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <div class="kicker"># 01 <span>// задание и идея</span></div>
+    <h2>Задание → решение</h2>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">task.md</span></div>
+      <div class="term-body">
+<span class="c"># Тема курсовой:</span>
+<span class="o">"MCP из plugins из skills + RAG —</span>
+<span class="o"> расширяем способности нейросети и обучаем её"</span>
+
+<span class="p">→</span> <span class="o">Я взял за основу свой проект <span class="acc">Jarvis</span> и довёл его</span>
+<span class="o">  до полноценного ИИ-агента с плагинами, навыками</span>
+<span class="o">  и базой знаний.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide">
+    <div class="kicker"># 02 <span>// если совсем просто</span></div>
+    <h2>Что это такое простыми словами</h2>
+    <p class="lead">Представь голосового помощника, как <b>Алиса</b> или <b>Siri</b> — но он:</p>
+    <ul class="bullets" style="margin-top:18px">
+      <li><b>живёт на твоём компьютере</b> <span>— и реально им управляет: создаёт файлы, открывает программы, делает скриншоты</span></li>
+      <li><b>можно бесконечно обучать</b> <span>— кидаешь документы или пишешь «плагин», и у него появляется новый навык</span></li>
+      <li><b>понимает и говорит голосом</b> <span>— слушает микрофон и озвучивает ответ</span></li>
+      <li><b>думает, как DeepSeek</b> <span>— сначала рассуждает «про себя», потом отвечает</span></li>
+    </ul>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide">
+    <div class="kicker"># 03 <span>// возможности</span></div>
+    <h2>Что умеет Jarvis</h2>
+    <div class="grid g3">
+      <div class="card"><div class="ic">🧠</div><h3>3 модели на выбор</h3><p>GLM (основная, бесплатная), Gemini, Ollama — переключение одной кнопкой</p></div>
+      <div class="card"><div class="ic">💭</div><h3>Глубокое мышление</h3><p>Режим рассуждений (reasoning), как у DeepSeek/Claude</p></div>
+      <div class="card"><div class="ic">👁</div><h3>Зрение</h3><p>Видит экран и картинки через мультимодальную GLM-4V</p></div>
+      <div class="card"><div class="ic">🗣</div><h3>Голос</h3><p>Озвучка ответов (TTS) и голосовой ввод (STT)</p></div>
+      <div class="card"><div class="ic">🗂</div><h3>Управление ПК</h3><p>Файлы, программы, мышь, клавиатура, скриншоты</p></div>
+      <div class="card"><div class="ic">📚</div><h3>База знаний (RAG)</h3><p>Ищет ответы в твоих документах</p></div>
+      <div class="card"><div class="ic">🧩</div><h3>Плагины и скиллы</h3><p>Погода, веб-поиск, генерация картинок, Википедия</p></div>
+      <div class="card"><div class="ic">⏱</div><h3>Аналитика времени</h3><p>Считает, сколько ты сидишь в приложениях</p></div>
+      <div class="card"><div class="ic">🔌</div><h3>MCP</h3><p>Подключение к внешним MCP-серверам</p></div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide">
+    <div class="kicker"># 04 <span>// главное: как работает диалог</span></div>
+    <h2>Что происходит за один запрос</h2>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><div class="t">Ты пишешь или говоришь команду — <b>«какая погода в Москве?»</b></div></div>
+      <div class="step"><div class="n">2</div><div class="t"><b>RAG</b> ищет полезные знания в базе и добавляет их в подсказку модели</div></div>
+      <div class="step"><div class="n">3</div><div class="t"><b>Нейросеть (GLM)</b> понимает запрос и решает: нужен инструмент <b>get_weather</b></div></div>
+      <div class="step"><div class="n">4</div><div class="t"><b>Агент выполняет инструмент</b> — реально запрашивает погоду / создаёт файл / ищет в сети</div></div>
+      <div class="step"><div class="n">5</div><div class="t">Результат возвращается модели → она формулирует понятный <b>ответ</b></div></div>
+      <div class="step"><div class="n">6</div><div class="t">Ответ <b>печатается по словам</b> (стриминг) и при желании <b>озвучивается</b></div></div>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide">
+    <div class="kicker"># 05 <span>// архитектура</span></div>
+    <h2>Как устроено внутри</h2>
+    <div class="arch">┌─────────────────────────────────────────────────────────┐
+│  <span class="a">GUI (PySide6)</span>  ·  Консоль  ·  <span class="m">Сервер (FastAPI)</span>          │
+└───────────────────────────┬─────────────────────────────┘
+                            │  текст / голос
+┌───────────────────────────▼─────────────────────────────┐
+│  <span class="a">ОРКЕСТРАТОР</span>  — ведёт диалог, память, цикл инструментов │
+│     ├─ <span class="cy">Провайдер модели</span>: GLM / Gemini / Ollama          │
+│     ├─ <span class="cy">RAG</span>: подмешивает знания из базы                   │
+│     └─ <span class="cy">Function calling</span>: выбирает нужный инструмент      │
+└───────────────────────────┬─────────────────────────────┘
+                            ▼
+┌─────────────────────────────────────────────────────────┐
+│  <span class="a">ИНСТРУМЕНТЫ (registry)</span>                                 │
+│  файлы · программы · мышь/клавиатура · скриншот ·         │
+│  RAG · плагины (погода, поиск, картинки, зрение) · MCP    │
+└─────────────────────────────────────────────────────────┘</div>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide">
+    <div class="kicker"># 06 <span>// мозг</span></div>
+    <h2>Мультимодельность</h2>
+    <div class="two">
+      <div>
+        <p class="lead">Все модели спрятаны за <b>единым интерфейсом провайдера</b>. Оркестратору всё равно, кто отвечает — можно менять модель, не трогая остальной код.</p>
+        <ul class="bullets" style="margin-top:20px">
+          <li><b>GLM</b> <span>— основная, бесплатная, доступна в РФ</span></li>
+          <li><b>Gemini</b> <span>— Google (гео-ограничен)</span></li>
+          <li><b>Ollama</b> <span>— локально, офлайн, без интернета</span></li>
+        </ul>
+      </div>
+      <div class="term">
+        <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">.env</span></div>
+        <div class="term-body">
+<span class="c"># выбор модели — одна строка</span>
+<span class="o">LLM_PROVIDER=</span><span class="p">glm</span>
+<span class="o">GLM_MODEL=</span><span class="p">glm-4-flash</span>
+<span class="o">GLM_THINKING=</span><span class="p">true</span> <span class="c"># 🧠</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide">
+    <div class="kicker"># 07 <span>// фишка</span></div>
+    <h2>💭 Глубокое мышление</h2>
+    <p class="lead">Как у <b>DeepSeek</b> и <b>Claude</b>: модель сначала <b class="cyan">рассуждает «про себя»</b>, разбивая задачу на шаги, и только потом выдаёт чистый ответ. Рассуждения видны отдельным приглушённым блоком.</p>
+    <div class="term" style="margin-top:24px">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">jarvis · deep-thinking</span></div>
+      <div class="term-body">
+<span class="c">🧠 размышления:</span>
+<span class="m">Это математическая задача. Разберём по шагам:</span>
+<span class="m">было 3 яблока, отдала половину = 1.5, осталось 1.5,</span>
+<span class="m">купила +5 → 6.5 ...</span>
+
+<span class="p">Ответ:</span> <span class="o">У Маши стало 6.5 яблок.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide">
+    <div class="kicker"># 08 <span>// память и обучение</span></div>
+    <h2>Как Jarvis «учится»</h2>
+    <div class="grid g2">
+      <div class="card"><div class="ic">📚</div><h3>RAG — база знаний</h3><p>Кидаешь .txt/.md/.pdf-тексты → агент режет их на кусочки, индексирует и при ответе ищет самое релевантное. Отвечает <b>по твоим документам</b>, а не выдумывает.</p></div>
+      <div class="card"><div class="ic">🧩</div><h3>Плагины и скиллы</h3><p>Плагин = папка с навыком. Пишешь функцию + описание → агент получает <b>новый инструмент</b>. Так добавлены погода, веб-поиск, генерация картинок, зрение.</p></div>
+      <div class="card"><div class="ic">🔌</div><h3>MCP</h3><p>Стандарт подключения внешних «серверов навыков». Jarvis работает как MCP-клиент — можно цеплять готовые инструменты от других.</p></div>
+      <div class="card"><div class="ic">🛠</div><h3>Function calling</h3><p>Модель сама решает, какой инструмент и с какими параметрами вызвать. Агент выполняет и возвращает результат обратно модели.</p></div>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide">
+    <div class="kicker"># 09 <span>// мультимедиа</span></div>
+    <h2>Зрение · Голос · Стриминг</h2>
+    <div class="grid g3">
+      <div class="card"><div class="ic">👁</div><h3>Зрение</h3><p>«Что на экране?» → делает скриншот → GLM-4V описывает и помогает</p></div>
+      <div class="card"><div class="ic">🔊</div><h3>Озвучка (TTS)</h3><p>Проговаривает ответы вслух, офлайн</p></div>
+      <div class="card"><div class="ic">🎤</div><h3>Голосовой ввод (STT)</h3><p>Говоришь в микрофон → текст распознаётся офлайн (vosk)</p></div>
+      <div class="card"><div class="ic">⌨</div><h3>Стриминг</h3><p>Ответ печатается по словам в реальном времени</p></div>
+      <div class="card"><div class="ic">🎨</div><h3>Генерация картинок</h3><p>«Нарисуй ...» → бесплатная CogView создаёт изображение</p></div>
+      <div class="card"><div class="ic">🌐</div><h3>Веб-поиск</h3><p>Свежие факты из интернета через DuckDuckGo</p></div>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide">
+    <div class="kicker"># 10 <span>// безопасность</span></div>
+    <h2>Безопасность по умолчанию</h2>
+    <ul class="bullets" style="margin-top:10px">
+      <li><b>SAFE_ROOT</b> <span>— все операции с файлами разрешены только в заданной папке (по умолч. рабочий стол). Системные файлы недоступны.</span></li>
+      <li><b>Подтверждение удаления</b> <span>— перед удалением агент обязан спросить пользователя.</span></li>
+      <li><b>Защита от выхода за пределы</b> <span>— блокируется обход через «..» (path traversal).</span></li>
+      <li><b>Ключи в .env</b> <span>— API-ключи не зашиты в код, лежат отдельно и не попадают в репозиторий.</span></li>
+    </ul>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide">
+    <div class="kicker"># 11 <span>// стек</span></div>
+    <h2>Технологии</h2>
+    <div class="grid g3">
+      <div class="card"><h3>Python 3</h3><p>Ядро агента, async/await</p></div>
+      <div class="card"><h3>PySide6 (Qt)</h3><p>Десктопный GUI</p></div>
+      <div class="card"><h3>FastAPI</h3><p>REST + WebSocket сервер</p></div>
+      <div class="card"><h3>GLM API</h3><p>OpenAI-совместимый, function calling + reasoning</p></div>
+      <div class="card"><h3>httpx · pydantic</h3><p>HTTP-клиент и типизированный конфиг</p></div>
+      <div class="card"><h3>pytest</h3><p>23 теста · авто-проверка ядра</p></div>
+    </div>
+    <p class="lead" style="margin-top:24px">Архитектура — слоями: <b>провайдеры → оркестратор → реестр инструментов → плагины</b>. Каждый слой заменяем независимо.</p>
+  </section>
+
+  <!-- 13 -->
+  <section class="slide">
+    <div class="kicker"># 12 <span>// демо</span></div>
+    <h2>Как запустить и попробовать</h2>
+    <div class="two">
+      <div class="term">
+        <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">запуск</span></div>
+        <div class="term-body">
+<span class="c"># просто двойной клик:</span>
+<span class="p">Запустить_Jarvis.bat</span>
+
+<span class="c"># или вручную:</span>
+<span class="o">python -m jarvis.gui</span>
+        </div>
+      </div>
+      <div>
+        <p class="lead" style="margin-bottom:16px"><b>Команды для демонстрации:</b></p>
+        <ul class="bullets">
+          <li>«Что сейчас на экране?» <span>— зрение</span></li>
+          <li>«Какая погода в Сочи?» <span>— скилл</span></li>
+          <li>«Нарисуй кота-киберпанка» <span>— картинка</span></li>
+          <li>«Создай папку проекты» <span>— управление ПК</span></li>
+          <li>«Найди новости про GLM» <span>— веб-поиск</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 -->
+  <section class="slide">
+    <div class="kicker">$ <span>./</span>summary<span class="cursor"></span></div>
+    <h1 style="font-size:clamp(30px,5vw,60px)">Чему научился<br><span class="glow">на этом проекте</span></h1>
+    <ul class="bullets" style="margin-top:24px">
+      <li>Построение <b>ИИ-агентов</b> и <b>function calling</b></li>
+      <li><b>RAG</b>, плагинные архитектуры и работа с <b>LLM API</b> (GLM, reasoning, vision)</li>
+      <li>Мультимодельная абстракция, потоковая генерация, голосовой интерфейс</li>
+      <li>Чистая <b>слоистая архитектура</b>, тесты, безопасность</li>
+    </ul>
+    <div class="meta" style="margin-top:40px">Спасибо за внимание &nbsp;·&nbsp; <b>lastlofty</b> &nbsp;·&nbsp; <span class="cyan">Jarvis AI Agent</span></div>
+  </section>
+
+</div>
+
+<div class="hud">
+  <div><span class="logo">λ jarvis_</span> &nbsp; presentation</div>
+  <div id="counter">01 / 14</div>
+</div>
+<div class="hint">← → пробел · F11 на весь экран</div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+let i=0;
+const prog=document.getElementById('prog');
+const counter=document.getElementById('counter');
+function show(n){
+  i=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+  prog.style.width=((i+1)/slides.length*100)+'%';
+  counter.textContent=String(i+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+}
+function next(){show(i+1)} function prev(){show(i-1)}
+document.addEventListener('keydown',e=>{
+  if(['ArrowRight',' ','PageDown','Enter'].includes(e.key)){e.preventDefault();next()}
+  else if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();prev()}
+  else if(e.key==='Home')show(0); else if(e.key==='End')show(slides.length-1);
+});
+document.addEventListener('click',e=>{ if(e.clientX > window.innerWidth*0.5) next(); else prev(); });
+show(0);
+</script>
+</body>
+</html>

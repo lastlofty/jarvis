@@ -1,0 +1,6 @@
+{
+  "name": "weather",
+  "description": "Текущая погода по городу через бесплатный open-meteo (без ключа).",
+  "enabled": true,
+  "knowledge": ["README.md"]
+}

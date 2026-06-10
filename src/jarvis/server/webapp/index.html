@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#070a0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Jarvis</title>
+<style>
+:root{
+  --bg:#070a0d; --soft:#0d1318; --panel:#0f1721; --border:#1c2733;
+  --text:#cfe3d6; --muted:#6f8a7d; --accent:#00ff9c; --accent-dim:#00b86f;
+  --cyan:#34e0ff; --err:#ff5f56;
+  --mono:'JetBrains Mono','Consolas',monospace;
+  --sans:-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden;
+  display:flex;flex-direction:column;height:100dvh}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:99;
+  background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.16) 3px)}
+.hidden{display:none!important}
+
+/* header */
+header{display:flex;align-items:center;gap:10px;padding:14px 16px;
+  padding-top:calc(14px + env(safe-area-inset-top));
+  background:rgba(7,10,13,.9);border-bottom:1px solid var(--border);z-index:2}
+.logo{font-family:var(--mono);font-weight:800;color:var(--accent);font-size:18px;letter-spacing:.5px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);box-shadow:0 0 8px currentColor}
+.dot.on{background:var(--accent);color:var(--accent)}
+.dot.off{background:var(--err);color:var(--err)}
+.spacer{flex:1}
+.iconbtn{background:transparent;border:1px solid var(--border);color:var(--text);
+  border-radius:8px;padding:8px 10px;font-size:16px}
+.iconbtn:active{border-color:var(--accent);color:var(--accent)}
+
+/* login */
+#login{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px;gap:14px}
+#login h1{font-family:var(--mono);font-size:30px;color:var(--accent);text-shadow:0 0 22px rgba(0,255,156,.4)}
+#login p{color:var(--muted);font-size:14px;line-height:1.5}
+label{font-family:var(--mono);font-size:12px;color:var(--muted);display:block;margin-bottom:6px;margin-top:6px}
+input{width:100%;background:var(--soft);border:1px solid var(--border);border-radius:10px;
+  padding:14px;color:var(--text);font-family:var(--mono);font-size:15px}
+input:focus{outline:none;border-color:var(--accent)}
+.btn{background:var(--accent);color:#04130b;border:none;border-radius:10px;padding:15px;
+  font-family:var(--mono);font-weight:700;font-size:15px;width:100%;margin-top:8px}
+.btn:active{background:var(--accent-dim)}
+.err{color:var(--err);font-size:13px;font-family:var(--mono);min-height:18px}
+
+/* chat */
+#chat{flex:1;display:flex;flex-direction:column;min-height:0}
+#messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+.msg{max-width:84%;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.45;word-wrap:break-word;white-space:pre-wrap}
+.msg.user{align-self:flex-end;background:var(--accent-dim);color:#04130b;border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:var(--panel);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg.sys{align-self:center;background:var(--soft);color:var(--muted);font-family:var(--mono);font-size:12px;text-align:center}
+.typing{align-self:flex-start;color:var(--muted);font-family:var(--mono);font-size:13px;font-style:italic;padding:4px 14px}
+.inbar{display:flex;gap:8px;padding:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  background:var(--bg);border-top:1px solid var(--border)}
+.inbar input{flex:1;border-radius:22px}
+.send{width:48px;height:48px;border-radius:50%;background:var(--accent);color:#04130b;border:none;font-size:20px;flex-shrink:0}
+.send:disabled{background:var(--panel);color:var(--muted)}
+
+/* screen modal */
+#screen{position:fixed;inset:0;background:rgba(4,7,10,.96);z-index:50;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+#screen .bar{display:flex;align-items:center;padding:12px 16px;gap:10px}
+#screen .bar b{font-family:var(--mono);color:var(--accent)}
+#screen img{flex:1;width:100%;object-fit:contain;min-height:0}
+#screen .hint{color:var(--muted);font-family:var(--mono);font-size:12px;text-align:center;padding:8px}
+</style>
+</head>
+<body>
+
+<header class="hidden" id="hdr">
+  <span class="logo">λ jarvis</span>
+  <span class="dot off" id="status"></span>
+  <span class="spacer"></span>
+  <button class="iconbtn" id="screenBtn" title="Экран ПК">🖥</button>
+  <button class="iconbtn" id="logoutBtn" title="Выйти">⏻</button>
+</header>
+
+<!-- LOGIN -->
+<section id="login">
+  <h1>λ jarvis_</h1>
+  <p>Управляй своим компьютером с телефона. Введи адрес сервера Jarvis и токен из настроек.</p>
+  <div>
+    <label>Адрес сервера</label>
+    <input id="host" placeholder="192.168.1.50:8000" autocomplete="off" autocapitalize="off">
+  </div>
+  <div>
+    <label>Токен (AUTH_TOKEN)</label>
+    <input id="token" type="password" placeholder="секрет из .env" autocomplete="off">
+  </div>
+  <div class="err" id="loginErr"></div>
+  <button class="btn" id="connectBtn">Подключиться</button>
+</section>
+
+<!-- CHAT -->
+<section id="chat" class="hidden">
+  <div id="messages"></div>
+  <div class="inbar">
+    <input id="msgInput" placeholder="Команда для Jarvis..." autocomplete="off">
+    <button class="send" id="sendBtn">➤</button>
+  </div>
+</section>
+
+<!-- SCREEN VIEWER -->
+<div id="screen" class="hidden">
+  <div class="bar">
+    <b>🖥 Экран ПК</b><span class="spacer" style="flex:1"></span>
+    <button class="iconbtn" id="refreshShot">⟳</button>
+    <button class="iconbtn" id="closeShot">✕</button>
+  </div>
+  <img id="shot" alt="screenshot">
+  <div class="hint" id="shotHint">загрузка...</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let ws = null, token = "", base = "";
+
+// автозаполнение: если приложение раздаётся самим сервером — host = текущий
+if (location.host) $("host").value = location.host;
+$("token").value = localStorage.getItem("jarvis_token") || "";
+if (localStorage.getItem("jarvis_host")) $("host").value = localStorage.getItem("jarvis_host");
+
+function setStatus(on){ const d=$("status"); d.className = "dot " + (on?"on":"off"); }
+
+function addMsg(text, cls){
+  const m = document.createElement("div");
+  m.className = "msg " + cls; m.textContent = text;
+  $("messages").appendChild(m);
+  $("messages").scrollTop = $("messages").scrollHeight;
+  return m;
+}
+
+let typingEl = null;
+function showTyping(on){
+  if(on && !typingEl){ typingEl=document.createElement("div"); typingEl.className="typing"; typingEl.textContent="Jarvis думает…"; $("messages").appendChild(typingEl); $("messages").scrollTop=$("messages").scrollHeight; }
+  else if(!on && typingEl){ typingEl.remove(); typingEl=null; }
+}
+
+function connect(){
+  const host = $("host").value.trim().replace(/^https?:\/\//,"").replace(/\/$/,"");
+  token = $("token").value.trim();
+  if(!host || !token){ $("loginErr").textContent="Заполни адрес и токен"; return; }
+  base = (location.protocol==="https:"?"https://":"http://") + host;
+  const wsUrl = (location.protocol==="https:"?"wss://":"ws://") + host + "/ws";
+  $("loginErr").textContent="Подключение…";
+
+  try { ws = new WebSocket(wsUrl); } catch(e){ $("loginErr").textContent="Неверный адрес"; return; }
+
+  ws.onopen = () => ws.send(JSON.stringify({type:"auth", token}));
+  ws.onmessage = ev => {
+    let d; try{ d=JSON.parse(ev.data);}catch(_){return;}
+    if(d.type==="auth"){
+      if(d.ok){
+        localStorage.setItem("jarvis_token", token);
+        localStorage.setItem("jarvis_host", host);
+        $("login").classList.add("hidden"); $("hdr").classList.remove("hidden"); $("chat").classList.remove("hidden");
+        setStatus(true);
+        if(!$("messages").children.length) addMsg("Подключено к Jarvis. Напиши команду.", "sys");
+      } else { $("loginErr").textContent="Неверный токен"; ws.close(); }
+    } else if(d.type==="status"){
+      if(d.status==="in_progress"){ showTyping(true); }
+      else if(d.status==="done"){ showTyping(false); addMsg(d.message||"(нет ответа)","bot"); setSending(false); }
+    } else if(d.type==="error"){ showTyping(false); addMsg("⚠️ "+(d.message||"ошибка"),"sys"); setSending(false); }
+  };
+  ws.onclose = () => { setStatus(false); };
+  ws.onerror = () => { $("loginErr").textContent="Не удалось подключиться. Проверь адрес/сеть."; };
+}
+
+function setSending(on){ $("sendBtn").disabled=on; }
+
+function send(){
+  const t = $("msgInput").value.trim();
+  if(!t || !ws || ws.readyState!==1) return;
+  addMsg(t,"user"); $("msgInput").value="";
+  setSending(true);
+  ws.send(JSON.stringify({type:"command", text:t}));
+}
+
+async function loadShot(){
+  $("shotHint").textContent="загрузка…";
+  try{
+    const r = await fetch(base+"/screenshot", {headers:{Authorization:"Bearer "+token}});
+    if(!r.ok){ $("shotHint").textContent="ошибка "+r.status; return; }
+    const blob = await r.blob();
+    $("shot").src = URL.createObjectURL(blob);
+    $("shotHint").textContent="обновлено "+new Date().toLocaleTimeString();
+  }catch(e){ $("shotHint").textContent="не удалось загрузить"; }
+}
+
+// события
+$("connectBtn").onclick = connect;
+$("token").addEventListener("keydown", e=>{ if(e.key==="Enter") connect(); });
+$("sendBtn").onclick = send;
+$("msgInput").addEventListener("keydown", e=>{ if(e.key==="Enter") send(); });
+$("logoutBtn").onclick = ()=>{ if(ws)ws.close(); localStorage.removeItem("jarvis_token"); location.reload(); };
+$("screenBtn").onclick = ()=>{ $("screen").classList.remove("hidden"); loadShot(); };
+$("refreshShot").onclick = loadShot;
+$("closeShot").onclick = ()=>$("screen").classList.add("hidden");
+
+// service worker (PWA)
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
+</script>
+</body>
+</html>

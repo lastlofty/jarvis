@@ -1,0 +1,6 @@
+{
+  "name": "wikipedia",
+  "description": "Скилл поиска кратких справок в Википедии (бесплатный API, без ключа).",
+  "enabled": true,
+  "knowledge": ["README.md"]
+}
