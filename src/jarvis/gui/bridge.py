@@ -50,10 +50,15 @@ class AgentBridge(QObject):
         """GUI вызывает это, когда пользователь нажал Enter.
 
         Метод вернётся мгновенно — обработка в фоне, результат придёт сигналом.
+        Пока идёт обработка предыдущего сообщения — новые игнорируются
+        (иначе несколько handle_stream параллельно портят общую историю).
         """
         if not self._loop or not self._loop.is_running():
             self.agent_error.emit("Async-loop ещё не запущен")
             return
+        if getattr(self, "_handling", False):
+            return  # уже обрабатываем — не запускаем второй параллельно
+        self._handling = True
         self.agent_thinking.emit()
         self.agent_busy_changed.emit(True)
         asyncio.run_coroutine_threadsafe(self._handle(text), self._loop)
@@ -113,6 +118,7 @@ class AgentBridge(QObject):
         except Exception as e:
             self.agent_error.emit(f"Ошибка: {e}")
         finally:
+            self._handling = False
             self.agent_busy_changed.emit(False)
 
 

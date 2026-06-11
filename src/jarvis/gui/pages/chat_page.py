@@ -279,6 +279,7 @@ class ChatPage(QWidget):
         # Состояние стрима
         self._stream_bubble: MessageBubble | None = None
         self._reasoning_bubble: MessageBubble | None = None
+        self._busy = False
 
         # Мост
         bridge.agent_thinking.connect(self._on_thinking)
@@ -349,6 +350,8 @@ class ChatPage(QWidget):
 
     # ---------- отправка / приём ----------
     def _on_send(self) -> None:
+        if self._busy:
+            return  # дождись ответа — иначе команды смешаются
         text = self._input.toPlainText().strip()
         if not text:
             return
@@ -362,7 +365,12 @@ class ChatPage(QWidget):
         self._thinking.start()
 
     def _on_busy(self, busy: bool) -> None:
+        self._busy = busy
         self._send_btn.setEnabled(not busy)
+        self._input.setPlaceholderText(
+            "Jarvis отвечает — подождите…" if busy
+            else "Спросите Jarvis что-нибудь... (Enter — отправить, Shift+Enter — перенос)"
+        )
         if not busy:
             self._thinking.stop()
 

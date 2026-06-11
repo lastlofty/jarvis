@@ -282,6 +282,14 @@ def test_security_token_and_bruteforce(monkeypatch):
     assert security.lock_remaining(ip) == 0
 
 
+def test_open_app_unknown_fails_honestly():
+    from jarvis.executor.app_tools import open_app
+
+    res = open_app("несуществующее_приложение_zzz_999")
+    assert res.status == "error"
+    assert "найти" in res.message.lower() or "открыть" in res.message.lower()
+
+
 def test_run_script_blocked_outside_safe_root(tmp_path, monkeypatch):
     from jarvis.core.config import settings
     from jarvis.executor.app_tools import run_script
