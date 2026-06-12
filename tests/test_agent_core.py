@@ -282,6 +282,25 @@ def test_security_token_and_bruteforce(monkeypatch):
     assert security.lock_remaining(ip) == 0
 
 
+def test_ollama_tool_args_to_object():
+    from jarvis.llm.providers.ollama_provider import OllamaProvider
+
+    msgs = [
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {"id": "x", "type": "function",
+                 "function": {"name": "get_weather", "arguments": '{"city": "Москва"}'}}
+            ],
+        }
+    ]
+    out = OllamaProvider._to_ollama_messages(msgs)
+    fn = out[0]["tool_calls"][0]["function"]
+    assert fn["arguments"] == {"city": "Москва"}  # строка -> объект (формат Ollama)
+    assert "id" not in out[0]["tool_calls"][0]
+
+
 def test_open_app_unknown_fails_honestly():
     from jarvis.executor.app_tools import open_app
 
