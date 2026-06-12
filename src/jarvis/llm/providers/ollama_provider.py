@@ -6,6 +6,7 @@ function calling через поле `tools`. Качество вызова ин
 """
 from __future__ import annotations
 
+import json
 import uuid
 from typing import Any
 
@@ -24,6 +25,32 @@ class OllamaProvider(LLMProvider):
         self.host = settings.ollama_host.rstrip("/")
         self.display_name = f"Ollama · {self.model}"
 
+    @staticmethod
+    def _to_ollama_messages(messages: list[Message]) -> list[dict[str, Any]]:
+        """Приводит историю к нативному формату Ollama.
+
+        Ollama /api/chat ждёт function.arguments как ОБЪЕКТ (а не JSON-строку,
+        как в OpenAI-формате), иначе парсер падает с ошибкой про '}'.
+        """
+        out: list[dict[str, Any]] = []
+        for m in messages:
+            if m.get("role") == "assistant" and m.get("tool_calls"):
+                new_calls = []
+                for tc in m["tool_calls"]:
+                    fn = tc.get("function", {})
+                    args = fn.get("arguments")
+                    if isinstance(args, str):
+                        try:
+                            args = json.loads(args) if args.strip() else {}
+                        except json.JSONDecodeError:
+                            args = {}
+                    new_calls.append({"function": {"name": fn.get("name", ""), "arguments": args}})
+                out.append({"role": "assistant", "content": m.get("content", ""),
+                            "tool_calls": new_calls})
+            else:
+                out.append(m)
+        return out
+
     async def generate(
         self,
         messages: list[Message],
@@ -31,7 +58,7 @@ class OllamaProvider(LLMProvider):
     ) -> LLMResponse:
         payload: dict[str, Any] = {
             "model": self.model,
-            "messages": messages,
+            "messages": self._to_ollama_messages(messages),
             "stream": False,
         }
         if tools:
