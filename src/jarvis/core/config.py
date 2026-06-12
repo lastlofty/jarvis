@@ -34,8 +34,9 @@ class Settings(BaseSettings):
     )
 
     # LLM — выбор провайдера
-    # Поддерживаются: "glm" (основной, бесплатный API), "gemini", "ollama".
-    llm_provider: str = Field(default="glm", description="Активный провайдер LLM")
+    # Поддерживаются: "glm" (бесплатный API), "gemini", "ollama".
+    # Ветка gpt-oss: по умолчанию локальная модель OpenAI gpt-oss:20b через Ollama.
+    llm_provider: str = Field(default="ollama", description="Активный провайдер LLM")
 
     # --- GLM (Zhipu AI / z.ai), OpenAI-совместимый эндпоинт ---
     glm_api_key: str = Field(default="", description="API-ключ GLM (open.bigmodel.cn)")
@@ -58,7 +59,8 @@ class Settings(BaseSettings):
 
     # --- Ollama (локальные модели) ---
     ollama_host: str = Field(default="http://localhost:11434")
-    ollama_model: str = Field(default="qwen2.5:7b")
+    # Ветка gpt-oss: открытая модель OpenAI (Apache 2.0), локально через Ollama.
+    ollama_model: str = Field(default="gpt-oss:20b")
 
     # --- RAG ---
     rag_enabled: bool = Field(default=True, description="Подмешивать знания из RAG")

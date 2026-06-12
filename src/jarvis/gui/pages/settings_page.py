@@ -168,10 +168,11 @@ class SettingsPage(QWidget):
         ))
 
         self._ollama_model = QLineEdit(settings.ollama_model)
-        self._ollama_model.setPlaceholderText("qwen2.5:7b")
+        self._ollama_model.setPlaceholderText("gpt-oss:20b")
         layout.addWidget(_Field(
             "Модель Ollama",
-            "Установите: ollama pull <модель>. Для инструментов нужна qwen2.5 / llama3.1+",
+            "Установите: ollama pull gpt-oss:20b (открытая модель OpenAI, ~14 ГБ). "
+            "Полегче: qwen2.5:7b. Нужна модель с поддержкой tools.",
             self._ollama_model,
         ))
 
