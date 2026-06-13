@@ -1,0 +1,6 @@
+{
+  "name": "invoice_processor",
+  "description": "Обработка счетов: учёт, сверка данных и подготовка финансовой отчётности.",
+  "enabled": true,
+  "knowledge": ["README.md"]
+}

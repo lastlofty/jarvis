@@ -282,6 +282,41 @@ def test_security_token_and_bruteforce(monkeypatch):
     assert security.lock_remaining(ip) == 0
 
 
+def _load_plugin(name):
+    import importlib.util
+    from pathlib import Path
+
+    p = Path(__file__).resolve().parent.parent / "plugins" / name / "skill.py"
+    spec = importlib.util.spec_from_file_location(f"plugin_{name}", p)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def test_invoice_processor(tmp_path, monkeypatch):
+    from jarvis.core.config import settings
+
+    monkeypatch.setattr(settings, "safe_root", str(tmp_path))
+    inv = _load_plugin("invoice_processor")
+    assert inv.record_invoice("A1", "Acme", "2026-01-01", 100, "RUB").status == "success"
+    assert inv.record_invoice("A2", "Acme", "2026-01-02", 50, "RUB").status == "success"
+    # дубль номера+поставщика -> ошибка
+    assert inv.record_invoice("A1", "Acme", "2026-01-01", 100, "RUB").status == "error"
+    summ = inv.financial_summary()
+    assert "Acme" in summ.message and "150" in summ.message
+
+
+def test_call_analyzer_crm(tmp_path, monkeypatch):
+    from jarvis.core.config import settings
+
+    monkeypatch.setattr(settings, "safe_root", str(tmp_path))
+    crm = _load_plugin("call_analyzer")
+    r = crm.save_crm_record("Альфа", "Саммари звонка", "Прислать КП", "в работе")
+    assert r.status == "success"
+    lst = crm.list_crm_records()
+    assert "Альфа" in lst.message
+
+
 def test_ollama_tool_args_to_object():
     from jarvis.llm.providers.ollama_provider import OllamaProvider
 

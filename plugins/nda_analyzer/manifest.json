@@ -1,0 +1,6 @@
+{
+  "name": "nda_analyzer",
+  "description": "Анализ NDA/договоров и маршрутизация документов по категориям.",
+  "enabled": true,
+  "knowledge": ["README.md"]
+}

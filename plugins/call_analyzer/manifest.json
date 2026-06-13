@@ -1,0 +1,6 @@
+{
+  "name": "call_analyzer",
+  "description": "Анализ звонков: чтение транскрипта, саммари и запись карточки в CRM.",
+  "enabled": true,
+  "knowledge": ["README.md"]
+}
